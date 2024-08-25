@@ -29,3 +29,13 @@ A dynamic and responsive spreadsheet application built with **Next.js**, **Tailw
    ```bash
    git clone https://github.com/yourusername/spreadsheet-app.git
    cd spreadsheet-app
+
+2. **Install NPM packages:**
+
+   ```bash
+   npm install
+
+3. **Run Project:**
+
+   ```bash
+   npm run dev
