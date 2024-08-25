@@ -26,8 +26,7 @@ A dynamic and responsive spreadsheet application built with **Next.js**, **Tailw
 
 1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/yourusername/spreadsheet-app.git
+   ```bash  
    cd spreadsheet-app
 
 2. **Install NPM packages:**
