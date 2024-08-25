@@ -1,113 +1,155 @@
-import Image from "next/image";
+"use client";
+import { useEffect, useState, useRef } from "react";
 
-export default function Home() {
+function Spreadsheet() {
+  const [data, setData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [visibleRows, setVisibleRows] = useState(20); // Start with 20 rows
+  const [visibleCols, setVisibleCols] = useState(20); // Start with 20 columns
+  const containerRef = useRef(null);
+
+  const totalRows = 1000; // Total number of rows to load
+  const rowBatchSize = 20; // Number of rows to load per batch
+
+  useEffect(() => {
+    // Initialize data with visible rows and columns
+    const initialData = Array.from({ length: visibleRows }, () =>
+      Array(visibleCols).fill("")
+    );
+    setData(initialData);
+  }, [visibleRows, visibleCols]);
+
+  const loadMoreRows = () => {
+    if (visibleRows < totalRows) {
+      const newRows = Array.from({ length: rowBatchSize }, () =>
+        Array(visibleCols).fill("")
+      );
+      setData((prevData) => [...prevData, ...newRows]);
+      setVisibleRows((prev) => prev + rowBatchSize);
+    }
+  };
+
+  const loadMoreCols = () => {
+    const newCols = data.map((row) => [...row, ...Array(20).fill("")]);
+    setData(newCols);
+    setVisibleCols((prev) => prev + 20);
+  };
+
+  const handleScroll = () => {
+    const container = containerRef.current;
+    // Trigger load more rows slightly earlier (10px from the bottom)
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 10) {
+      loadMoreRows();
+    }
+    // Trigger load more columns slightly earlier (10px from the right edge)
+    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 10) {
+      loadMoreCols();
+    }
+  };
+
+  const handleCellChange = (rowIndex, colIndex, value) => {
+    const newData = data.map((row, i) =>
+      i === rowIndex ? row.map((cell, j) => (j === colIndex ? value : cell)) : row
+    );
+    setData(newData);
+    handleSearch(searchQuery, newData); // Update search results if search query is active
+  };
+
+  const handleSearch = (query, dataToSearch) => {
+    if (query.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = [];
+    dataToSearch.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        if (cell.toLowerCase().includes(query.toLowerCase())) {
+          results.push({ rowIndex, colIndex });
+        }
+      });
+    });
+
+    setSearchResults(results);
+  };
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    if (data) {
+      handleSearch(query, data);
+    }
+  };
+
+  const isHighlighted = (rowIndex, colIndex) => {
+    return searchResults.some(
+      (result) => result.rowIndex === rowIndex && result.colIndex === colIndex
+    );
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.js</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+    <div>
+      <div>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          placeholder="Search..."
+          className="m-4 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800 hover:dark:bg-opacity-30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        style={{ maxHeight: "80vh", overflow: "auto" }}
+      >
+        <table className="border-collapse border border-gray-300 w-full">
+          <thead>
+            <tr>
+              {Array(visibleCols+1)
+                .fill("")
+                .map((item, index) => (
+                  <th
+                    key={index}
+                    className="border border-gray-300 px-4 py-2 text-gray-700 bg-gray-100"
+                  >
+                    {index === 0 ? "" : `Column ${index}`}
+                  </th>
+                ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, rowIndex) => (
+              <tr key={rowIndex} className="hover:bg-gray-50">
+                <td className="border border-gray-300 px-4 py-2 text-center bg-gray-100 text-gray-700">
+                  {rowIndex + 1}
+                </td>
+                {row.map((cell, colIndex) => (
+                  <td
+                    style={{ minWidth: 200 }}
+                    key={colIndex}
+                    className={`border border-gray-300 ${
+                      isHighlighted(rowIndex, colIndex) ? "bg-red-200" : ""
+                    }`}
+                  >
+                    <input
+                      type="text"
+                      value={cell}
+                      onChange={(e) =>
+                        handleCellChange(rowIndex, colIndex, e.target.value)
+                      }
+                      className="w-full px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-    </main>
+    </div>
   );
 }
+
+export default Spreadsheet;
